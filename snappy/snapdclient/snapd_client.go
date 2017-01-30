@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 Canonical Ltd
+ * Copyright (C) 2016-2017 Canonical Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -15,7 +15,7 @@
  *
  */
 
-package snappy
+package snapdclient
 
 import (
 	"fmt"
@@ -44,6 +44,9 @@ type SnapdClient interface {
 	CreateUser(request *client.CreateUserOptions) (*client.CreateUserResult, error)
 	Interfaces() (client.Interfaces, error)
 	Known(assertTypeName string, headers map[string]string) ([]asserts.Assertion, error)
+	Change(id string) (*client.Change, error)
+	Enable(id string, options *client.SnapOptions) (string, error)
+	Disable(id string, options *client.SnapOptions) (string, error)
 }
 
 // ClientAdapter adapts our expectations to the snapd client API.
@@ -116,6 +119,21 @@ func (a *ClientAdapter) FindOne(name string) (*client.Snap, *client.ResultInfo, 
 // Sections returns the list of available sections
 func (a *ClientAdapter) Sections() ([]string, error) {
 	return a.snapdClient.Sections()
+}
+
+// Change returns the list of ongoing changes for a given snap and changeid
+func (a *ClientAdapter) Change(id string) (*client.Change, error) {
+	return a.snapdClient.Change(id)
+}
+
+// Enable enables the snap
+func (a *ClientAdapter) Enable(name string, options *client.SnapOptions) (string, error) {
+	return a.snapdClient.Enable(name, options)
+}
+
+// Disable disables the snap
+func (a *ClientAdapter) Disable(name string, options *client.SnapOptions) (string, error) {
+	return a.snapdClient.Disable(name, options)
 }
 
 // internal

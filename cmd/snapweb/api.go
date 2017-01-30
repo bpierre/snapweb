@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014, 2015, 2016 Canonical Ltd
+ * Copyright (C) 2014-2017 Canonical Ltd
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 3 as
@@ -20,10 +20,11 @@ package main
 import (
 	"net/http"
 	"path"
+	"strings"
 
 	"github.com/gorilla/mux"
 
-	"github.com/snapcore/snapweb/snappy"
+	"github.com/snapcore/snapweb/snappy/app"
 )
 
 const apiVersion = "v2"
@@ -41,7 +42,8 @@ func makeAPIHandler(apiRootPath string) http.Handler {
 	router.HandleFunc("/device-action", handleDeviceAction)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if SimpleCookieCheck(w, r) == nil {
+		if strings.HasPrefix(r.URL.Path, path.Join(apiPath, "packages/internal/")) ||
+			SimpleCookieCheck(w, r) == nil {
 			router.ServeHTTP(w, r)
 		} else {
 			// in any other case, refuse the request and redirect

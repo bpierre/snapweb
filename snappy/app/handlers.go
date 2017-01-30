@@ -23,26 +23,27 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/snapcore/snapweb/statustracker"
+	"github.com/snapcore/snapweb/snappy/snapdclient"
+	"github.com/snapcore/snapweb/statetracker"
 
 	"github.com/gorilla/mux"
 )
 
 // Handler implements snappy's packages api.
 type Handler struct {
-	statusTracker *statustracker.StatusTracker
-	snapdClient   SnapdClient
+	stateTracker *statetracker.StateTracker
+	snapdClient  snapdclient.SnapdClient
 }
 
 // NewHandler creates an instance that implements snappy's packages api.
 func NewHandler() *Handler {
 	return &Handler{
-		statusTracker: statustracker.New(),
-		snapdClient:   NewClientAdapter(),
+		stateTracker: statetracker.New(),
+		snapdClient:  snapdclient.NewClientAdapter(),
 	}
 }
 
-func (h *Handler) setClient(c SnapdClient) {
+func (h *Handler) setClient(c snapdclient.SnapdClient) {
 	h.snapdClient = c
 }
 
@@ -132,6 +133,37 @@ func (h *Handler) remove(w http.ResponseWriter, r *http.Request) {
 	h.snapOperationResponse(name, err, w)
 }
 
+func (h *Handler) internalSnap(w http.ResponseWriter, r *http.Request) {
+	snapName := mux.Vars(r)["name"]
+
+	if snapName == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	values := r.URL.Query()
+	var err error
+	var operation string
+	if operation = values.Get("operation"); operation == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//	var changeID string
+
+	switch operation {
+	case "enable":
+		err = h.enable(snapName)
+	case "disable":
+		err = h.disable(snapName)
+	}
+
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
 // MakeMuxer sets up the handlers multiplexing to handle requests against snappy's
 // packages api
 func (h *Handler) MakeMuxer(prefix string, parentRouter *mux.Router) http.Handler {
@@ -148,6 +180,9 @@ func (h *Handler) MakeMuxer(prefix string, parentRouter *mux.Router) http.Handle
 
 	// Remove a package
 	m.HandleFunc("/{name}", h.remove).Methods("DELETE")
+
+	// Remove a package
+	m.HandleFunc("/internal/{name}", h.internalSnap).Methods("GET")
 
 	return m
 }
