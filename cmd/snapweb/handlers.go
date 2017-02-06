@@ -31,6 +31,7 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
+	"github.com/rs/cors"
 
 	// most other handlers use the ClientAdapter for now
 	"github.com/snapcore/snapweb/snappy/app"
@@ -236,7 +237,13 @@ func initURLHandlers(log *log.Logger) {
 	log.Println("Initializing HTTP handlers...")
 
 	// API
-	http.Handle("/api/", makeAPIHandler("/api/"))
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowCredentials: true,
+		OptionsPassthrough: true,
+	})
+
+	http.Handle("/api/", c.Handler(makeAPIHandler("/api/")))
 
 	// Resources
 	http.Handle("/public/", loggingHandler(http.FileServer(http.Dir(filepath.Join(os.Getenv("SNAP"), "www")))))
