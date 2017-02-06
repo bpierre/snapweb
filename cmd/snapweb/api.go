@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 
 	"github.com/snapcore/snapweb/snappy/app"
 )
@@ -34,7 +35,7 @@ func makeAPIHandler(apiRootPath string) http.Handler {
 	var apiPath = path.Join(apiRootPath, apiVersion)
 
 	router := mux.NewRouter().PathPrefix(apiPath).Subrouter()
-	router.Handle("/packages/", snappy.NewHandler().MakeMuxer("/packages", router))
+	router.Handle("/packages/", cors.Default().Handler(snappy.NewHandler().MakeMuxer("/packages", router)))
 	router.HandleFunc("/validate-token", validateToken)
 	router.HandleFunc("/sections", handleSections)
 	router.HandleFunc("/time-info", handleTimeInfo)
